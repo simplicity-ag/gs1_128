@@ -59,7 +59,12 @@ class Builder
         $printer = new Printer($this->width, $this->height, $this->fontPath);
         $printer->setBackgroundColor($this->backgroundColor);
         $printer->setPrintColor($this->paintColor);
-        $printer->setFontSize($this->fontSize);
+        if ($this->fontSize === 0) {
+            $printer->disableText();
+        } else {
+            $printer->enableText();
+            $printer->setFontSize($this->fontSize);
+        }
 
         if (is_null($this->scale) === false) {
             $printer->imposeScale($this->scale);

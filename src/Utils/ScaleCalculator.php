@@ -17,7 +17,7 @@ class ScaleCalculator
 
         if ($width == 0)
         {
-            throw new \RuntimeException('Barcode is to long for given width');
+            throw new \RuntimeException('Barcode is too long for given width');
         }
 
         if ($width > $this->max)

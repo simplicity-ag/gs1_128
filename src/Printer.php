@@ -86,6 +86,8 @@ class Printer
     private $scaleCalculator;
 
     private $imposedScale;
+    /** @var bool */
+    private $textEnabled = true;
 
     /**
      * @param integer $width
@@ -121,6 +123,7 @@ class Printer
         $this->imageHandler = imagecreate($this->width, $this->height);
         $this->allocatedBackgroundColor = $this->initColor($this->backgroundColor);
         $this->allocatedPrintColor = $this->initColor($this->printColor);
+        $this->barHeight = $this->initBarHeight();
 
         $barcode = $this->barsGenerator->generate($textToEncode);
 
@@ -134,7 +137,10 @@ class Printer
         }
 
         $this->printBars($barcode);
-        $this->printText($textToEncode);
+
+        if($this->textEnabled) {
+            $this->printText($textToEncode);
+        }
     }
 
     public function getBase64($textToEncode)
@@ -143,8 +149,7 @@ class Printer
 
         ob_start ();
         imagepng($this->imageHandler);
-        $content = ob_get_contents();
-        ob_end_clean ();
+        $content = ob_get_clean();
 
         return base64_encode($content);
     }
@@ -167,12 +172,6 @@ class Printer
     {
         //todo: must be greater than 0
         $this->fontSize = $fontSize;
-        $this->barHeight = $this->height - $this->fontSize - 10;
-
-        if ($this->barHeight < 10)
-        {
-            throw new RuntimeException('Image is to short');
-        }
     }
 
     /**
@@ -215,11 +214,12 @@ class Printer
     {
         $barcodeLength = strlen($barcode) * $this->scale;
         $xPosition = abs(($this->width - $barcodeLength) / 2);
+        $barcodeStrLen = strlen($barcode);
 
-        for ($i=0; $i < strlen($barcode); $i++) {
+        for ($i=0; $i < $barcodeStrLen; $i++) {
             $val = strtolower($barcode[$i]);
 
-            if ($val == "1") {
+            if ($val === '1') {
                 imagefilledrectangle(
                     $this->imageHandler,
                     $xPosition,
@@ -246,7 +246,7 @@ class Printer
 
         //2.68 for 10
         //2.80 for 9
-        $x = __DIR__."/".$this->fontPath;
+        $fontFile = __DIR__."/".$this->fontPath;
         $xPosition = abs(($this->width / 2)) - strlen($text)* $this->fontSize / 2.8;
         imagettftext(
             $this->imageHandler,
@@ -255,10 +255,34 @@ class Printer
             $xPosition,
             $y = $this->barHeight + 10 + $this->fontSize - 5,
             $this->allocatedPrintColor,
-            $x,
+            $fontFile,
             $text
         );
     }
 
+    private function initBarHeight()
+    {
+        $barHeight = $this->height;
 
+        if($this->textEnabled) {
+            $barHeight -= $this->fontSize + 10;
+        }
+
+        if ($barHeight < 10)
+        {
+            throw new RuntimeException('Image is too short');
+        }
+
+        return $barHeight;
+    }
+
+    public function enableText()
+    {
+        $this->textEnabled = true;
+    }
+
+    public function disableText()
+    {
+        $this->textEnabled = false;
+    }
 }
